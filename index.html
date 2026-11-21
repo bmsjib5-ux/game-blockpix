@@ -2,24 +2,12 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<!--
-  หมายเหตุ: คำขอ "push ขึ้น GitHub (https://github.com/bmsjib5-ux/game-blockpix.git) พร้อมสร้าง URL"
-  ทำผ่านการแก้ไขไฟล์นี้ไม่ได้ ไฟล์เกมจึงยังเหมือนเดิมทุกอย่าง
-  วิธีเผยแพร่ (รันในโฟลเดอร์ที่มี index.html และโฟลเดอร์ assets/):
-    git init
-    git add index.html assets
-    git commit -m "Add Block Pix game"
-    git branch -M main
-    git remote add origin https://github.com/bmsjib5-ux/game-blockpix.git
-    git push -u origin main
-  จากนั้นไปที่ Settings > Pages ของ repo แล้วเลือก Branch: main / (root) แล้วกด Save
-  URL ของเกมจะอยู่ที่: https://bmsjib5-ux.github.io/game-blockpix/
--->
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ตัวต่อสะสมแต้ม</title>
 <style>
-html,body{margin:0;padding:0;height:100%;background:#1b1f3a;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
-canvas{display:block;width:100vw;height:100vh;touch-action:none;background:#1b1f3a}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;height:100%;position:fixed;inset:0;background:#1b1f3a;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+canvas{display:block;width:100vw;height:100vh;height:100dvh;touch-action:none;background:#1b1f3a}
 </style>
 </head>
 <body>
@@ -172,7 +160,13 @@ const inRect=(p,b)=>p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h;
 /* ---------- layout ---------- */
 function resize(){
   DPR=Math.min(2,window.devicePixelRatio||1);
-  W=window.innerWidth;H=window.innerHeight;
+  const vv=window.visualViewport;
+  W=Math.max(1,Math.round(vv&&vv.width?vv.width:window.innerWidth));
+  H=Math.max(1,Math.round(vv&&vv.height?vv.height:window.innerHeight));
+  // Explicit CSS px so the canvas display size always matches the computed
+  // buffer. Avoids the mobile "100vh" stretch when the browser address bar
+  // shows/hides, which otherwise distorts the board and hides the tray.
+  cv.style.width=W+'px';cv.style.height=H+'px';
   cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
   ctx.setTransform(DPR,0,0,DPR,0,0);
   layout();
@@ -534,6 +528,12 @@ window.addEventListener('keydown',e=>{
   if(state==='play')clampCur();
 });
 window.addEventListener('resize',resize);
+// Orientation changes report stale sizes for a moment on some mobile
+// browsers, so re-measure a few times after the flip settles.
+window.addEventListener('orientationchange',function(){resize();setTimeout(resize,150);setTimeout(resize,400);});
+if(window.visualViewport){window.visualViewport.addEventListener('resize',resize);window.visualViewport.addEventListener('scroll',resize);}
+window.addEventListener('load',resize);
+window.addEventListener('pageshow',resize);
 
 /* ---------- update ---------- */
 function update(dt){
